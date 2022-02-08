@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace Bolvar
+namespace Bolvar.Models
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

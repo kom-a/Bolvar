@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Windows.Input;
 
-namespace Bolvar
+namespace Bolvar.Models
 {
     class DirectoryOptionsModel : INotifyPropertyChanged
     {
