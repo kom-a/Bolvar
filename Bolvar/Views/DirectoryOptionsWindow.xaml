@@ -1,0 +1,84 @@
+﻿<Window x:Class="Bolvar.DirectoryOptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Directory Options" 
+        Width="400"
+        Height="200" 
+        ResizeMode="NoResize">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Label 
+            Grid.Row="0"
+            Grid.Column="0"
+            Margin="0 0 0 4"
+            Content="Exclude dir:"/>
+        <TextBox
+            Grid.Row="0"
+            Grid.Column="1"
+            Margin="0 0 0 4"
+            Text="{Binding ExcludeDir}"/>
+
+        <Label 
+            Grid.Row="1"
+            Grid.Column="0"
+            Margin="0 0 0 4"
+            Content="File mask:"/>
+        <TextBox
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="0 0 0 4"
+            Text="{Binding FileMask}"/>
+
+        <Label 
+            Grid.Row="2"
+            Grid.Column="0"
+            Margin="0 0 0 4"
+            Content="Exclude mask:"/>
+        <TextBox
+            Grid.Row="2"
+            Grid.Column="1"
+            Margin="0 0 0 4"
+            Text="{Binding ExcludeMask}"/>
+
+        <CheckBox
+            Grid.Row="3"
+            Grid.Column="0"
+            Grid.ColumnSpan="2" 
+            HorizontalAlignment="Center"
+            Content="Include sub-directories"
+            IsChecked="{Binding IncludeSubDirectories}"/>
+
+        <Grid 
+            Grid.Row="4"
+            Grid.Column="0"
+            Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Button 
+                Margin="100 0 100 0"
+                Content="Ok"
+                Command="{Binding OkCommand}"
+                CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, 
+                           AncestorType={x:Type Window}}}">
+            </Button>
+        </Grid>
+        
+    </Grid>
+    
+</Window>
