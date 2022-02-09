@@ -172,7 +172,7 @@
                 Grid.Column="0"
                 Minimum="0" 
                 Maximum="100" 
-                Value="{Binding ProgeressPercentage}" 
+                Value="{Binding ProgressPercentage}"
                 Height="15"
                 IsIndeterminate="{Binding IsGettingFiles}" 
                 

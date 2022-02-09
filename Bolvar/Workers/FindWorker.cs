@@ -13,6 +13,13 @@ namespace Bolvar.Workers
         public string Pattern { get; set; }
     }
 
+    class FindWorkerReportProgress
+    {
+        public FileMatch Match { get; set; }
+        public bool Error { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
     class FindWorker
     {
         private BackgroundWorker m_Worker;
@@ -49,22 +56,40 @@ namespace Bolvar.Workers
 
                         if (fileContents.Contains(pattern))
                         {
-
-                            m_Worker.ReportProgress(percentProgress, new FileMatch()
+                            m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
                             {
-                                Filename = filename,
-                                Matches = 1
+                                Match = new FileMatch()
+                                {
+                                    Filename = filename,
+                                    Matches = 1
+                                },
+                                Error = false,
+                                ErrorMessage = null
+                            });
+                        }
+                        else
+                        {
+                            m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
+                            {
+                                Match = new FileMatch()
+                                {
+                                    Filename = filename,
+                                    Matches = 0
+                                },
+                                Error = false,
+                                ErrorMessage = null
                             });
                         }
                     }
                 }
-                catch (UnauthorizedAccessException ex)
+                catch (Exception ex)
                 {
-                    Debug.WriteLine("Exception: " + ex.Message);
-                }
-                catch (IOException ex)
-                {
-                    Debug.WriteLine("Exception: " + ex.Message);
+                    m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
+                    {
+                        Match = null,
+                        Error = true,
+                        ErrorMessage = ex.Message
+                    });
                 }
             }
         }

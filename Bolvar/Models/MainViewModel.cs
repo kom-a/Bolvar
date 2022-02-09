@@ -30,7 +30,7 @@ namespace Bolvar.Models
         private FindWorker m_FindWorker;
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
-        private int m_ProgeressPercentage;
+        private int m_ProgressPercentage;
         private ConsoleLogger m_ConsoleLogger;
 
         public ICommand ChooseDirectoryCommand { get; set; }
@@ -45,7 +45,7 @@ namespace Bolvar.Models
             FileMatches = new ObservableCollection<FileMatch>();
             IsGettingFiles = false;
             IsSearching = false;
-            ProgeressPercentage = 0;
+            ProgressPercentage = 0;
 
             m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
             m_FindWorker = new FindWorker(FindProgressChanged, FindCompleted);
@@ -76,17 +76,25 @@ namespace Bolvar.Models
         {
             IsSearching = false;
             SearchStatus = "";
-            ProgeressPercentage = 100;
+            ProgressPercentage = 100;
         }
 
         private void FindProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            FileMatch match = e.UserState as FileMatch;
+            FindWorkerReportProgress report = e.UserState as FindWorkerReportProgress;
 
-            ProgeressPercentage = e.ProgressPercentage;
-            SearchStatus = match.Filename;
+            ProgressPercentage = e.ProgressPercentage;
+            SearchStatus = report.Match.Filename;
 
-            FileMatches.Add(match);
+            if (report.Error)
+            {
+                Warn(report.ErrorMessage);
+            }
+            
+            if(report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
+            {
+                FileMatches.Add(report.Match);
+            }
         }
 
         private void GetFilesCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -132,7 +140,7 @@ namespace Bolvar.Models
 
             if(!Directory.Exists(RootDirectory))
             {
-                Error($"Directory \"{RootDirectory}\" does not exists." );
+                Error($"Directory \"{RootDirectory}\" does not exist." );
                 success = false;
             }
 
@@ -275,14 +283,14 @@ namespace Bolvar.Models
             }
         }
 
-        public int ProgeressPercentage
+        public int ProgressPercentage
         {
-            get { return m_ProgeressPercentage; }
+            get { return m_ProgressPercentage; }
             set
             {
-                if (m_ProgeressPercentage != value)
-                    m_ProgeressPercentage = value;
-                OnPropertyChanged(nameof(ProgeressPercentage));
+                if (m_ProgressPercentage != value)
+                    m_ProgressPercentage = value;
+                OnPropertyChanged(nameof(ProgressPercentage));
             }
         }
 
