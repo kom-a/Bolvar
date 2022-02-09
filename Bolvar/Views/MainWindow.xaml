@@ -5,18 +5,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Bolvar"
         xmlns:converters="clr-namespace:Bolvar.Converters"
+        xmlns:helpers="clr-namespace:Bolvar.Helpers"
         mc:Ignorable="d"
         Title="Bolvar" Height="650" Width="800" Background="GhostWhite">
 
     <Window.Resources>
         <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <converters:ConsoleLoggerToFlowDocumentConverter x:Key="ConsoleLoggerToFlowDocumentConverter"/>
     </Window.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="150"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
@@ -197,13 +199,21 @@
             </ListView.View>
         </ListView>
 
-        <TextBox 
-                Grid.Row="5"
-                VerticalAlignment="Stretch" 
-                Background="WhiteSmoke" 
-                IsReadOnly="True"
-                Margin="10"
-                Text="{Binding ConsoleText}"/>
+        <TabControl
+            Grid.Row="5"
+            Margin="10">
+            <TabItem Header="Preview">Preview</TabItem>
+            <TabItem Header="Console">
+                <helpers:BindableRichTextBox 
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Visible"
+                    Background="#202020"
+                    IsReadOnly="True"
+                    FontFamily="Consolas"
+                    FontSize="14"
+                    Document="{Binding Logger, Converter={StaticResource ConsoleLoggerToFlowDocumentConverter}}"></helpers:BindableRichTextBox>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>
 

@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Input;
+using Bolvar.Utils;
 using Bolvar.Views;
 using Ookii.Dialogs.Wpf;
 
@@ -22,12 +25,12 @@ namespace Bolvar.Models
         private string m_FindText;
         private string m_ReplaceText;
         private string m_SearchStatus;
-        private string m_ConsoleText;
         private BackgroundWorker m_GetFilesWorker;
         private BackgroundWorker m_FindWorker;
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
         private int m_ProgeressPercentage;
+        private ConsoleLogger m_ConsoleLogger;
 
         public ICommand ChooseDirectoryCommand { get; set; }
         public ICommand DirectoryOptionsCommand { get; set; }
@@ -39,7 +42,6 @@ namespace Bolvar.Models
         {
             m_OwnerWindow = ownerWindow;
             FileMatches = new ObservableCollection<FileMatch>();
-            ConsoleText = "";
             IsGettingFiles = false;
             IsSearching = false;
             ProgeressPercentage = 0;
@@ -55,8 +57,6 @@ namespace Bolvar.Models
             m_FindWorker.ProgressChanged += FindProgressChanged;
             m_FindWorker.RunWorkerCompleted += FindCompleted;
             
-
-
             ChooseDirectoryCommand = new RelayCommand(o => ChooseDirectoryClick());
             DirectoryOptionsCommand = new RelayCommand(o => DirectoryOptionsClick());
             FindCommand = new RelayCommand(o => FindClick());
@@ -75,12 +75,16 @@ namespace Bolvar.Models
                 IncludeFilesWithoutMatches = false
             };
 
+            m_ConsoleLogger = new ConsoleLogger();
+            Trace("Welcome to Bolvar find and replace tool");
+            Trace("---------------------------------------");
         }
 
         private void FindCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsSearching = false;
             SearchStatus = "";
+            ProgeressPercentage = 100;
         }
 
         private void FindProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -102,20 +106,31 @@ namespace Bolvar.Models
                 if (m_FindWorker.CancellationPending)
                     break;
 
-                string filename = filenames[i];
-                using (StreamReader sr = new StreamReader(filename))
+                try
                 {
-                    string fileContents = sr.ReadToEnd();
-
-                    if (fileContents.Contains(FindText))
+                    string filename = filenames[i];
+                    using (StreamReader sr = new StreamReader(filename))
                     {
-                        int percentProgress = (int)((float)i / filenames.Length * 100 + 1);
-                        m_FindWorker.ReportProgress(percentProgress, new FileMatch()
+                        string fileContents = sr.ReadToEnd();
+
+                        if (fileContents.Contains(FindText))
                         {
-                            Filename = filename,
-                            Matches = 1
-                        });
+                            int percentProgress = (int)((float)i / filenames.Length * 100 + 1);
+                            m_FindWorker.ReportProgress(percentProgress, new FileMatch()
+                            {
+                                Filename = filename,
+                                Matches = 1
+                            });
+                        }
                     }
+                }
+                catch(UnauthorizedAccessException ex)
+                {
+                    Debug.WriteLine("Exception: " + ex.Message);
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine("Exception: " + ex.Message);
                 }
             }
         }
@@ -156,11 +171,9 @@ namespace Bolvar.Models
         private bool ValidateFields()
         {
             bool success = true;
-            ConsoleText = "";
 
             if(!Directory.Exists(RootDirectory))
             {
-                ConsoleText = "Error: Directory does not exists \"" + RootDirectory + "\"";
                 success = false;
             }
 
@@ -192,6 +205,7 @@ namespace Bolvar.Models
                 IsSearching = true;
                 IsGettingFiles = true;
                 SearchStatus = "Getting file list.";
+                Info("Searching started at " + DateTime.Now);
                 m_GetFilesWorker.RunWorkerAsync();
             }
         }
@@ -208,7 +222,7 @@ namespace Bolvar.Models
 
         private void ReplaceClick(object sender = null)
         {
-            
+            Warn("HEllo world, this is a warning. Do not pay attention to it. THis is not an error LOL");
         }
 
         public ObservableCollection<FileMatch> FileMatches
@@ -256,14 +270,12 @@ namespace Bolvar.Models
             }
         }
 
-        public string ConsoleText
+        public ConsoleLogger Logger
         {
-            get { return m_ConsoleText; }
+            get { return m_ConsoleLogger; }
             set
             {
-                if (m_ConsoleText != value)
-                    m_ConsoleText = value;
-                OnPropertyChanged(nameof(ConsoleText));
+                OnPropertyChanged(nameof(Logger));
             }
         }
 
@@ -310,6 +322,33 @@ namespace Bolvar.Models
                 OnPropertyChanged(nameof(ProgeressPercentage));
             }
         }
+
+
+        #region logger_helpers
+        private void Trace(string message)
+        {
+            Logger.Trace(message);
+            OnPropertyChanged(nameof(Logger));
+        }
+
+        private void Info(string message)
+        {
+            Logger.Info(message);
+            OnPropertyChanged(nameof(Logger));
+        }
+
+        private void Warn(string message)
+        {
+            Logger.Warn(message);
+            OnPropertyChanged(nameof(Logger));
+        }
+
+        private void Error(string message)
+        {
+            Logger.Error(message);
+            OnPropertyChanged(nameof(Logger));
+        }
+        #endregion
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
