@@ -32,6 +32,7 @@ namespace Bolvar.Models
         private bool m_IsSearching;
         private int m_ProgressPercentage;
         private ConsoleLogger m_ConsoleLogger;
+        private int m_TotalMatches;
 
         public ICommand ChooseDirectoryCommand { get; set; }
         public ICommand DirectoryOptionsCommand { get; set; }
@@ -45,6 +46,7 @@ namespace Bolvar.Models
             FileMatches = new ObservableCollection<FileMatch>();
             IsGettingFiles = false;
             IsSearching = false;
+            TotalMatches = 0;
             ProgressPercentage = 0;
 
             m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
@@ -72,11 +74,28 @@ namespace Bolvar.Models
             Trace("Welcome to Bolvar find and replace tool");
         }
 
+        private bool ValidateFields()
+        {
+            bool success = true;
+
+            if (!Directory.Exists(RootDirectory))
+            {
+                Error($"Directory \"{RootDirectory}\" does not exist.");
+                success = false;
+            }
+
+            return success;
+        }
+
+        #region worker_callbacks
+
         private void FindCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsSearching = false;
             SearchStatus = "";
             ProgressPercentage = 100;
+
+            Info($"Search Completed. {TotalMatches} matches found.");
         }
 
         private void FindProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -84,15 +103,15 @@ namespace Bolvar.Models
             FindWorkerReportProgress report = e.UserState as FindWorkerReportProgress;
 
             ProgressPercentage = e.ProgressPercentage;
-            SearchStatus = report.Match.Filename;
-
+            
             if (report.Error)
             {
                 Warn(report.ErrorMessage);
             }
-            
-            if(report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
+            else if(report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
             {
+                SearchStatus = report.Match.Filename;
+                TotalMatches += report.Match.Matches;
                 FileMatches.Add(report.Match);
             }
         }
@@ -102,6 +121,7 @@ namespace Bolvar.Models
             IsGettingFiles = false;
             SearchStatus = "";
             string[] filenames = e.Result as string[];
+            Info($"Got {filenames.Length} files");
             m_FindWorker.RunAsync(new FindWorkerArgument()
             {
                 Filenames = filenames,
@@ -109,11 +129,9 @@ namespace Bolvar.Models
             });
         }
 
-        private void GetFilesWork(object sender, DoWorkEventArgs e)
-        {
-            IEnumerable<string> filenames = GetAllFilenames();
-            e.Result = filenames;
-        }
+        #endregion
+
+        #region button_callbacks
 
         private void ChooseDirectoryClick(object sender = null)
         {
@@ -130,39 +148,14 @@ namespace Bolvar.Models
             directoryOptionsWindow.DataContext = m_DirectoryOptions;
             directoryOptionsWindow.Owner = m_OwnerWindow;
             directoryOptionsWindow.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner;
-            
+
             directoryOptionsWindow.ShowDialog();
-        }
-
-        private bool ValidateFields()
-        {
-            bool success = true;
-
-            if(!Directory.Exists(RootDirectory))
-            {
-                Error($"Directory \"{RootDirectory}\" does not exist." );
-                success = false;
-            }
-
-            return success;
-        }
-
-        private IEnumerable<string> GetAllFilenames()
-        {
-            EnumerationOptions options = new EnumerationOptions()
-            {
-                IgnoreInaccessible = true,
-                RecurseSubdirectories = m_DirectoryOptions.IncludeSubDirectories,
-                ReturnSpecialDirectories = false,
-            };
-
-            return Directory.GetFiles(RootDirectory, m_DirectoryOptions.FileMask, options);
         }
 
         private void FindClick()
         {
-            
             FileMatches.Clear();
+            TotalMatches = 0;
 
             if (!ValidateFields())
                 return;
@@ -196,6 +189,9 @@ namespace Bolvar.Models
             Warn("HEllo world, this is a warning. Do not pay attention to it. THis is not an error LOL");
         }
 
+        #endregion
+
+        #region properties
         public ObservableCollection<FileMatch> FileMatches
         {
             get { return m_FileMatches; }
@@ -294,6 +290,18 @@ namespace Bolvar.Models
             }
         }
 
+        public int TotalMatches
+        { 
+            get { return m_TotalMatches; }
+            set
+            {
+                if (m_TotalMatches != value)
+                    m_TotalMatches = value;
+                OnPropertyChanged(nameof(TotalMatches));
+            }
+        }
+
+#endregion
 
         #region logger_helpers
         private void Trace(string message)
@@ -339,6 +347,7 @@ namespace Bolvar.Models
 
             OnPropertyChanged(nameof(Logger));
         }
+         
         #endregion
 
         protected virtual void OnPropertyChanged(string propertyName)
