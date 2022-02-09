@@ -9,6 +9,7 @@ using System.Threading;
 using System.Windows.Input;
 using Bolvar.Utils;
 using Bolvar.Views;
+using Bolvar.Workers;
 using Ookii.Dialogs.Wpf;
 
 namespace Bolvar.Models
@@ -25,8 +26,8 @@ namespace Bolvar.Models
         private string m_FindText;
         private string m_ReplaceText;
         private string m_SearchStatus;
-        private BackgroundWorker m_GetFilesWorker;
-        private BackgroundWorker m_FindWorker;
+        private GetFilesWorker m_GetFilesWorker;
+        private FindWorker m_FindWorker;
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
         private int m_ProgeressPercentage;
@@ -46,17 +47,9 @@ namespace Bolvar.Models
             IsSearching = false;
             ProgeressPercentage = 0;
 
-            m_GetFilesWorker = new BackgroundWorker();
-            m_GetFilesWorker.DoWork += GetFilesWork;
-            m_GetFilesWorker.RunWorkerCompleted += GetFilesCompleted;
+            m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
+            m_FindWorker = new FindWorker(FindProgressChanged, FindCompleted);
 
-            m_FindWorker = new BackgroundWorker();
-            m_FindWorker.WorkerSupportsCancellation = true;
-            m_FindWorker.WorkerReportsProgress = true;
-            m_FindWorker.DoWork += FindWork;
-            m_FindWorker.ProgressChanged += FindProgressChanged;
-            m_FindWorker.RunWorkerCompleted += FindCompleted;
-            
             ChooseDirectoryCommand = new RelayCommand(o => ChooseDirectoryClick());
             DirectoryOptionsCommand = new RelayCommand(o => DirectoryOptionsClick());
             FindCommand = new RelayCommand(o => FindClick());
@@ -77,7 +70,6 @@ namespace Bolvar.Models
 
             m_ConsoleLogger = new ConsoleLogger();
             Trace("Welcome to Bolvar find and replace tool");
-            Trace("---------------------------------------");
         }
 
         private void FindCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -97,50 +89,16 @@ namespace Bolvar.Models
             FileMatches.Add(match);
         }
 
-        private void FindWork(object sender, DoWorkEventArgs e)
-        {
-            string[] filenames = e.Argument as string[];
-
-            for (int i = 0; i < filenames.Length; i++)
-            {
-                if (m_FindWorker.CancellationPending)
-                    break;
-
-                try
-                {
-                    string filename = filenames[i];
-                    using (StreamReader sr = new StreamReader(filename))
-                    {
-                        string fileContents = sr.ReadToEnd();
-
-                        if (fileContents.Contains(FindText))
-                        {
-                            int percentProgress = (int)((float)i / filenames.Length * 100 + 1);
-                            m_FindWorker.ReportProgress(percentProgress, new FileMatch()
-                            {
-                                Filename = filename,
-                                Matches = 1
-                            });
-                        }
-                    }
-                }
-                catch(UnauthorizedAccessException ex)
-                {
-                    Debug.WriteLine("Exception: " + ex.Message);
-                }
-                catch (IOException ex)
-                {
-                    Debug.WriteLine("Exception: " + ex.Message);
-                }
-            }
-        }
-
         private void GetFilesCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsGettingFiles = false;
             SearchStatus = "";
-            IEnumerable<string> filenames = e.Result as IEnumerable<string>;
-            m_FindWorker.RunWorkerAsync(filenames);
+            string[] filenames = e.Result as string[];
+            m_FindWorker.RunAsync(new FindWorkerArgument()
+            {
+                Filenames = filenames,
+                Pattern = FindText
+            });
         }
 
         private void GetFilesWork(object sender, DoWorkEventArgs e)
@@ -174,6 +132,7 @@ namespace Bolvar.Models
 
             if(!Directory.Exists(RootDirectory))
             {
+                Error($"Directory \"{RootDirectory}\" does not exists." );
                 success = false;
             }
 
@@ -200,13 +159,17 @@ namespace Bolvar.Models
             if (!ValidateFields())
                 return;
 
-            if(!m_GetFilesWorker.IsBusy)
+            if(!m_GetFilesWorker.IsBusy())
             {
                 IsSearching = true;
                 IsGettingFiles = true;
                 SearchStatus = "Getting file list.";
-                Info("Searching started at " + DateTime.Now);
-                m_GetFilesWorker.RunWorkerAsync();
+                LogNewSearch();
+                m_GetFilesWorker.RunAsync(new GetFilesWorkerArgument()
+                {
+                    Root = RootDirectory,
+                    Options = m_DirectoryOptions
+                });
             }
         }
 
@@ -346,6 +309,26 @@ namespace Bolvar.Models
         private void Error(string message)
         {
             Logger.Error(message);
+            OnPropertyChanged(nameof(Logger));
+        }
+
+        private void LogNewSearch()
+        {
+            Logger.Trace("---------------------------------------");
+            Logger.Info("Searching started at " + DateTime.Now);
+
+            Logger.Info("Directory: " + RootDirectory);
+
+            if (!String.IsNullOrWhiteSpace(m_DirectoryOptions.FileMask))
+                Logger.Info("File mask: " + m_DirectoryOptions.FileMask);
+            if(!String.IsNullOrWhiteSpace(m_DirectoryOptions.ExcludeDir))
+                Logger.Info("Excluded dirs: " + m_DirectoryOptions.ExcludeDir);
+            if(!String.IsNullOrWhiteSpace(m_DirectoryOptions.ExcludeMask))
+                Logger.Info("Excluded mask: " + m_DirectoryOptions.ExcludeMask);
+
+            Logger.Info("Case sensitive: " + m_SearchOptions.CaseSensitive);
+            Logger.Info("Include Files Without Matches: " + m_SearchOptions.IncludeFilesWithoutMatches);
+
             OnPropertyChanged(nameof(Logger));
         }
         #endregion

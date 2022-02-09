@@ -6,7 +6,7 @@ using System.Windows.Input;
 
 namespace Bolvar.Models
 {
-    class DirectoryOptionsModel : INotifyPropertyChanged
+    public class DirectoryOptionsModel : INotifyPropertyChanged
     {
         public String ExcludeDir { get; set; }
         public String FileMask { get; set; }
