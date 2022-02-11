@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Bolvar.Workers
 {
@@ -35,7 +36,39 @@ namespace Bolvar.Workers
                 ReturnSpecialDirectories = false,
             };
 
-            e.Result = Directory.GetFiles(settings.Root, settings.Options.FileMask, options);
+            string[] masks = settings.Options.ExcludeMask.Split(',');
+            List<Regex> regexMasks = new List<Regex>();
+            foreach (var m in masks)
+            {
+                regexMasks.Add(new Regex(
+                '^' +
+                    Regex.Replace(m, @"\s+", "")
+                    .Replace(".", "[.]")
+                    .Replace("*", ".*")
+                    .Replace("?", ".")
+                + '$',
+                RegexOptions.IgnoreCase));
+            }
+
+            string[] files = Directory.GetFiles(settings.Root, settings.Options.FileMask, options);
+            List<string> res = new List<string>();
+
+            foreach (var f in files)
+            {
+                bool matchExclude = false;
+                foreach (var m in regexMasks)
+                {
+                    if (m.IsMatch(f))
+                    {
+                        matchExclude = true;
+                        break;
+                    }
+                }
+                if (!matchExclude)
+                    res.Add(f);
+            }
+
+            e.Result = res.ToArray();
         }
 
         public bool IsBusy()
