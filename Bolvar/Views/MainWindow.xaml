@@ -181,7 +181,8 @@
                 Grid.Row="1"
                 Grid.Column="1"
                 IsCancel="True"
-                IsEnabled="{Binding IsSearching}"
+                IsEnabled="{Binding IsGettingFiles, Converter={StaticResource InverseBooleanConverter}}"
+                Command="{Binding CancelCommand}"
                 Content="Cancel"/>
 
         </Grid>
@@ -203,16 +204,21 @@
             Grid.Row="5"
             Margin="10">
             <TabItem Header="Preview">Preview</TabItem>
+
+            
             <TabItem Header="Console">
+                <ScrollViewer ScrollChanged="ScrollViewer_ScrollChanged" x:Name="ConsoleScrollViewer">
                 <helpers:BindableRichTextBox 
-                    HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollBarVisibility="Visible"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Disabled"
                     Background="#202020"
                     IsReadOnly="True"
                     FontFamily="Consolas"
                     FontSize="14"
                     Document="{Binding Logger, Converter={StaticResource ConsoleLoggerToFlowDocumentConverter}}"></helpers:BindableRichTextBox>
+                </ScrollViewer>
             </TabItem>
+            
         </TabControl>
     </Grid>
 </Window>

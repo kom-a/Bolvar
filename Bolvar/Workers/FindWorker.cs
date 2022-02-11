@@ -43,9 +43,12 @@ namespace Bolvar.Workers
             for (int i = 0; i < filenames.Length; i++)
             {
                 if (m_Worker.CancellationPending)
+                {
+                    e.Cancel = true;
                     break;
+                }
 
-                int percentProgress = (int)((float)i / filenames.Length * 100 + 1);
+                int percentProgress = (int)((float)i / filenames.Length * 100) + 1;
 
                 try
                 {
@@ -102,6 +105,11 @@ namespace Bolvar.Workers
         public void RunAsync(FindWorkerArgument argument)
         {
             m_Worker.RunWorkerAsync(argument);
+        }
+
+        public void Cancel()
+        {
+            m_Worker.CancelAsync();
         }
     }
 }

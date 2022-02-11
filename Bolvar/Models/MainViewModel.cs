@@ -32,6 +32,7 @@ namespace Bolvar.Models
         private bool m_IsSearching;
         private int m_ProgressPercentage;
         private ConsoleLogger m_ConsoleLogger;
+        private int m_FilesProcessed;
         private int m_TotalMatches;
 
         public ICommand ChooseDirectoryCommand { get; set; }
@@ -40,6 +41,8 @@ namespace Bolvar.Models
         public ICommand SearchOptionsCommand { get; set; }
         public ICommand ReplaceCommand { get; set; }
 
+        public ICommand CancelCommand { get; set; }
+
         public MainViewModel(MainWindow ownerWindow)
         {
             m_OwnerWindow = ownerWindow;
@@ -47,6 +50,7 @@ namespace Bolvar.Models
             IsGettingFiles = false;
             IsSearching = false;
             TotalMatches = 0;
+            FilesProcessed = 0;
             ProgressPercentage = 0;
 
             m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
@@ -57,6 +61,7 @@ namespace Bolvar.Models
             FindCommand = new RelayCommand(o => FindClick());
             SearchOptionsCommand = new RelayCommand(o => SearchOptionsClick());
             ReplaceCommand = new RelayCommand(o => ReplaceClick());
+            CancelCommand = new RelayCommand(o => CancelClick());
 
             m_DirectoryOptions = new DirectoryOptionsModel() {
                 IncludeSubDirectories = true,
@@ -95,7 +100,16 @@ namespace Bolvar.Models
             SearchStatus = "";
             ProgressPercentage = 100;
 
-            Info($"Search Completed. {TotalMatches} matches found.");
+            if (e.Cancelled)
+            {
+                Info($"Searching has been canceled.");
+            }
+            else
+            {
+                Info($"Search Completed. {TotalMatches} matches found.");
+            }
+
+            Info($"{FilesProcessed} files processed.");
         }
 
         private void FindProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -103,14 +117,17 @@ namespace Bolvar.Models
             FindWorkerReportProgress report = e.UserState as FindWorkerReportProgress;
 
             ProgressPercentage = e.ProgressPercentage;
+            FilesProcessed++;
             
+            if(report.Match != null)
+                SearchStatus = report.Match.Filename;
+
             if (report.Error)
             {
                 Warn(report.ErrorMessage);
             }
             else if(report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
             {
-                SearchStatus = report.Match.Filename;
                 TotalMatches += report.Match.Matches;
                 FileMatches.Add(report.Match);
             }
@@ -156,6 +173,7 @@ namespace Bolvar.Models
         {
             FileMatches.Clear();
             TotalMatches = 0;
+            FilesProcessed = 0;
 
             if (!ValidateFields())
                 return;
@@ -187,6 +205,11 @@ namespace Bolvar.Models
         private void ReplaceClick(object sender = null)
         {
             Warn("HEllo world, this is a warning. Do not pay attention to it. THis is not an error LOL");
+        }
+
+        private void CancelClick(object sender = null)
+        {
+            m_FindWorker.Cancel();
         }
 
         #endregion
@@ -301,7 +324,18 @@ namespace Bolvar.Models
             }
         }
 
-#endregion
+        public int FilesProcessed
+        {
+            get { return m_FilesProcessed; }
+            set
+            {
+                if (m_FilesProcessed != value)
+                    m_FilesProcessed = value;
+                OnPropertyChanged(nameof(FilesProcessed));
+            }
+        }
+
+        #endregion
 
         #region logger_helpers
         private void Trace(string message)
@@ -334,6 +368,7 @@ namespace Bolvar.Models
             Logger.Info("Searching started at " + DateTime.Now);
 
             Logger.Info("Directory: " + RootDirectory);
+            Logger.Info("Include sub-directories: " + m_DirectoryOptions.IncludeSubDirectories);
 
             if (!String.IsNullOrWhiteSpace(m_DirectoryOptions.FileMask))
                 Logger.Info("File mask: " + m_DirectoryOptions.FileMask);
