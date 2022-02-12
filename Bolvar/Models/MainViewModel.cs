@@ -52,6 +52,8 @@ namespace Bolvar.Models
             TotalMatches = 0;
             FilesProcessed = 0;
             ProgressPercentage = 0;
+            RootDirectory = "C:\\Users\\kamil\\Desktop";
+            FindText = "main()\n{\nint a;";
 
             m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
             m_FindWorker = new FindWorker(FindProgressChanged, FindCompleted);
@@ -66,7 +68,7 @@ namespace Bolvar.Models
             m_DirectoryOptions = new DirectoryOptionsModel() {
                 IncludeSubDirectories = true,
                 ExcludeDir = "",
-                FileMask = "*.*",
+                FileMask = "Новый текстовый документ (2).txt",
                 ExcludeMask = ""
             };
 
@@ -97,16 +99,17 @@ namespace Bolvar.Models
         private void FindCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsSearching = false;
-            SearchStatus = "";
-            ProgressPercentage = 100;
-
+            
             if (e.Cancelled)
             {
-                Info($"Searching has been canceled.");
+                SearchStatus = "Canceled";
+                Info($"Searching has been canceled at " + DateTime.Now);
             }
             else
             {
-                Info($"Search Completed. {TotalMatches} matches found.");
+                SearchStatus = "Complete";
+                ProgressPercentage = 100;
+                Info($"Search Completed at {DateTime.Now}. {TotalMatches} matches found.");
             }
 
             Info($"{FilesProcessed} files processed.");
