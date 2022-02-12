@@ -142,7 +142,8 @@ namespace Bolvar.Models
             m_FindWorker.RunAsync(new FindWorkerArgument()
             {
                 Filenames = filenames,
-                Pattern = FindText
+                Pattern = FindText,
+                CaseSensitive = m_SearchOptions.CaseSensitive
             });
         }
 

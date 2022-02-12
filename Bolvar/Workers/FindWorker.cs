@@ -11,6 +11,7 @@ namespace Bolvar.Workers
     {
         public string[] Filenames { get; set; }
         public string Pattern { get; set; }
+        public bool CaseSensitive { get; set; }
     }
 
     class FindWorkerReportProgress
@@ -34,6 +35,20 @@ namespace Bolvar.Workers
             m_Worker.RunWorkerCompleted += completed;
         }
 
+        private List<int> AllIndexesOf(string str, string value, bool caseSensitive)
+        {
+            if (String.IsNullOrEmpty(value))
+                throw new ArgumentException("the string to find may not be empty", "value");
+            List<int> indexes = new List<int>();
+            for (int index = 0; ; index += value.Length)
+            {
+                index = str.IndexOf(value, index, caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+                if (index == -1)
+                    return indexes;
+                indexes.Add(index);
+            }
+        }
+
         private void FindWork(object sender, DoWorkEventArgs e)
         {
             FindWorkerArgument argument = e.Argument as FindWorkerArgument;
@@ -55,34 +70,25 @@ namespace Bolvar.Workers
                     string filename = filenames[i];
                     using (StreamReader sr = new StreamReader(filename))
                     {
-                        string fileContents = sr.ReadToEnd();
+                        string line;
+                        int totalOccurences = 0;
 
-                        if (fileContents.Contains(pattern))
+                        while ((line = sr.ReadLine()) != null)
                         {
-                            m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
-                            {
-                                Match = new FileMatch()
-                                {
-                                    Filename = filename,
-                                    Matches = 1
-                                },
-                                Error = false,
-                                ErrorMessage = null
-                            });
+                            List<int> indices = AllIndexesOf(line, pattern, argument.CaseSensitive);
+                            totalOccurences += indices.Count;
                         }
-                        else
+
+                        m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
                         {
-                            m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
+                            Match = new FileMatch()
                             {
-                                Match = new FileMatch()
-                                {
-                                    Filename = filename,
-                                    Matches = 0
-                                },
-                                Error = false,
-                                ErrorMessage = null
-                            });
-                        }
+                                Filename = filename,
+                                Matches = totalOccurences
+                            },
+                            Error = false,
+                            ErrorMessage = ""
+                        });
                     }
                 }
                 catch (Exception ex)
