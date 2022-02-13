@@ -31,9 +31,10 @@ namespace Bolvar.Models
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
         private int m_ProgressPercentage;
-        private ConsoleLogger m_ConsoleLogger;
+        private ConsoleMessage m_ConsoleMessage;
         private int m_FilesProcessed;
         private int m_TotalMatches;
+        private FileMatch m_SelectedMatch;
 
         public ICommand ChooseDirectoryCommand { get; set; }
         public ICommand DirectoryOptionsCommand { get; set; }
@@ -52,8 +53,9 @@ namespace Bolvar.Models
             TotalMatches = 0;
             FilesProcessed = 0;
             ProgressPercentage = 0;
-            RootDirectory = "C:\\Users\\kamil\\Desktop";
-            FindText = "main()\n{\nint a;";
+            RootDirectory = "C:\\Users\\kamil\\Desktop\\test bolvar";
+            FindText = "hello world";
+            ReplaceText = "hello kamil";
 
             m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
             m_FindWorker = new FindWorker(FindProgressChanged, FindCompleted);
@@ -68,7 +70,7 @@ namespace Bolvar.Models
             m_DirectoryOptions = new DirectoryOptionsModel() {
                 IncludeSubDirectories = true,
                 ExcludeDir = "",
-                FileMask = "Новый текстовый документ (2).txt",
+                FileMask = "hello.txt",
                 ExcludeMask = ""
             };
 
@@ -77,7 +79,6 @@ namespace Bolvar.Models
                 IncludeFilesWithoutMatches = false
             };
 
-            m_ConsoleLogger = new ConsoleLogger();
             Trace("Welcome to Bolvar find and replace tool");
         }
 
@@ -127,7 +128,10 @@ namespace Bolvar.Models
 
             if (report.Error)
             {
-                Warn(report.ErrorMessage);
+                if (report.ErrorMessage == "Binary")
+                    Warn($"Binary file {report.Match.Filename} skipped.");
+                else
+                    Warn(report.ErrorMessage);
             }
             else if(report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
             {
@@ -264,12 +268,14 @@ namespace Bolvar.Models
             }
         }
 
-        public ConsoleLogger Logger
+        public ConsoleMessage ConsoleMSG
         {
-            get { return m_ConsoleLogger; }
+            get { return m_ConsoleMessage; }
             set
             {
-                OnPropertyChanged(nameof(Logger));
+                if (m_ConsoleMessage != value)
+                    m_ConsoleMessage = value;
+                OnPropertyChanged(nameof(ConsoleMSG));
             }
         }
 
@@ -339,52 +345,57 @@ namespace Bolvar.Models
             }
         }
 
+        public FileMatch SelectedMatch
+        {
+            get { return m_SelectedMatch; }
+            set
+            {
+                if (m_SelectedMatch != value)
+                    m_SelectedMatch = value;
+                OnPropertyChanged(nameof(SelectedMatch));
+            }
+        }
+
         #endregion
 
         #region logger_helpers
         private void Trace(string message)
         {
-            Logger.Trace(message);
-            OnPropertyChanged(nameof(Logger));
+            ConsoleMSG = new ConsoleMessage(message, ConsoleMessage.LogLevel.Trace);
         }
 
         private void Info(string message)
         {
-            Logger.Info(message);
-            OnPropertyChanged(nameof(Logger));
+            ConsoleMSG = new ConsoleMessage(message, ConsoleMessage.LogLevel.Info);
         }
 
         private void Warn(string message)
         {
-            Logger.Warn(message);
-            OnPropertyChanged(nameof(Logger));
+            ConsoleMSG = new ConsoleMessage(message, ConsoleMessage.LogLevel.Warning);
         }
 
         private void Error(string message)
         {
-            Logger.Error(message);
-            OnPropertyChanged(nameof(Logger));
+            ConsoleMSG = new ConsoleMessage(message, ConsoleMessage.LogLevel.Error);
         }
 
         private void LogNewSearch()
         {
-            Logger.Trace("---------------------------------------");
-            Logger.Info("Searching started at " + DateTime.Now);
+            Trace("---------------------------------------");
+            Info("Searching started at " + DateTime.Now);
 
-            Logger.Info("Directory: " + RootDirectory);
-            Logger.Info("Include sub-directories: " + m_DirectoryOptions.IncludeSubDirectories);
+            Info("Directory: " + RootDirectory);
+            Info("Include sub-directories: " + m_DirectoryOptions.IncludeSubDirectories);
 
             if (!String.IsNullOrWhiteSpace(m_DirectoryOptions.FileMask))
-                Logger.Info("File mask: " + m_DirectoryOptions.FileMask);
+                Info("File mask: " + m_DirectoryOptions.FileMask);
             if(!String.IsNullOrWhiteSpace(m_DirectoryOptions.ExcludeDir))
-                Logger.Info("Excluded dirs: " + m_DirectoryOptions.ExcludeDir);
+                Info("Excluded dirs: " + m_DirectoryOptions.ExcludeDir);
             if(!String.IsNullOrWhiteSpace(m_DirectoryOptions.ExcludeMask))
-                Logger.Info("Excluded mask: " + m_DirectoryOptions.ExcludeMask);
+                Info("Excluded mask: " + m_DirectoryOptions.ExcludeMask);
 
-            Logger.Info("Case sensitive: " + m_SearchOptions.CaseSensitive);
-            Logger.Info("Include Files Without Matches: " + m_SearchOptions.IncludeFilesWithoutMatches);
-
-            OnPropertyChanged(nameof(Logger));
+            Info("Case sensitive: " + m_SearchOptions.CaseSensitive);
+            Info("Include Files Without Matches: " + m_SearchOptions.IncludeFilesWithoutMatches);
         }
          
         #endregion

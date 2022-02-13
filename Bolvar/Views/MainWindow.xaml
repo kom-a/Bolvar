@@ -11,7 +11,8 @@
 
     <Window.Resources>
         <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-        <converters:ConsoleLoggerToFlowDocumentConverter x:Key="ConsoleLoggerToFlowDocumentConverter"/>
+        <converters:ConsoleMessageToFlowDocumentConverter x:Key="ConsoleMessageToFlowDocumentConverter"/>
+        <converters:FileMatchToPreviewConverter x:Key="FileMatchToPreviewConverter"/>
     </Window.Resources>
     
     <Grid>
@@ -191,6 +192,7 @@
                 Grid.Row="4"
                 Margin="10" 
                 SelectionMode="Single"
+                SelectedItem="{Binding SelectedMatch}"
                 ItemsSource="{Binding FileMatches}">
             <ListView.View>
                 <GridView>
@@ -203,7 +205,11 @@
         <TabControl
             Grid.Row="5"
             Margin="10">
-            <TabItem Header="Preview">Preview</TabItem>
+            <TabItem Header="Preview">
+                <ScrollViewer>
+                    <TextBlock Text="{Binding SelectedMatch, Converter={StaticResource FileMatchToPreviewConverter}}"></TextBlock>
+                </ScrollViewer>
+            </TabItem>
 
             
             <TabItem Header="Console">
@@ -215,7 +221,8 @@
                     IsReadOnly="True"
                     FontFamily="Consolas"
                     FontSize="14"
-                    Document="{Binding Logger, Converter={StaticResource ConsoleLoggerToFlowDocumentConverter}}"></helpers:BindableRichTextBox>
+                    x:Name="ConsoleLog"
+                    Document="{Binding ConsoleMSG, Converter={StaticResource ConsoleMessageToFlowDocumentConverter}}"></helpers:BindableRichTextBox>
                 </ScrollViewer>
             </TabItem>
             

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bolvar.Utils;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -66,6 +67,23 @@ namespace Bolvar.Workers
                 try
                 {
                     string filename = filenames[i];
+
+                    if (FileUtils.IsBinary(filename))
+                    {
+                        m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
+                        {
+                            Match = new FileMatch()
+                            {
+                                Filename = filename,
+                                Matches = 0
+                            },
+                            Error = true,
+                            ErrorMessage = "Binary"
+                        });
+
+                        continue;
+                    }
+
                     using (StreamReader sr = new StreamReader(filename))
                     {
                         string line;
@@ -121,6 +139,23 @@ namespace Bolvar.Workers
                 {
                     int totalOccurences = 0;
                     string filename = filenames[i];
+
+                    if (FileUtils.IsBinary(filename))
+                    {
+                        m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
+                        {
+                            Match = new FileMatch()
+                            {
+                                Filename = filename,
+                                Matches = 0
+                            },
+                            Error = true,
+                            ErrorMessage = "Binary"
+                        });
+
+                        continue;
+                    }
+
                     LinkedList<string> cache = new LinkedList<string>();
                     using (StreamReader sr = new StreamReader(filename))
                     {
@@ -143,6 +178,7 @@ namespace Bolvar.Workers
                                     {
                                         if (line.StartsWith(patternLines[j].Replace("\r", ""), comparison))
                                         {
+                                            // MATCH
                                             totalOccurences++;
                                             if (cache.Count != 0)
                                                 cache.RemoveFirst();
@@ -155,7 +191,7 @@ namespace Bolvar.Workers
                                     }
                                     else
                                     {
-                                        if(line.Equals(patternLines[j].Replace("\r", ""), comparison))
+                                        if(line != null && line.Equals(patternLines[j].Replace("\r", ""), comparison))
                                         {
                                             // MATCH
                                         }
