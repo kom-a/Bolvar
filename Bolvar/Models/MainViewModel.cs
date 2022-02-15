@@ -26,7 +26,6 @@ namespace Bolvar.Models
         private string m_FindText;
         private string m_ReplaceText;
         private string m_SearchStatus;
-        private GetFilesWorker m_GetFilesWorker;
         private FindWorker m_FindWorker;
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
@@ -54,11 +53,15 @@ namespace Bolvar.Models
             FilesProcessed = 0;
             ProgressPercentage = 0;
             RootDirectory = "C:\\Users\\kamil\\Desktop\\test bolvar";
-            FindText = "hello world";
-            ReplaceText = "hello kamil";
+            FindText = "hello kamil";
+            ReplaceText = "hello world";
 
-            m_GetFilesWorker = new GetFilesWorker(GetFilesCompleted);
-            m_FindWorker = new FindWorker(FindProgressChanged, FindCompleted);
+            m_FindWorker = new FindWorker(new Callbacks()
+            {
+                GotFiles = GetFilesCompleted,
+                ProgressChanged = FindProgressChanged,
+                Completed = FindCompleted
+            });
 
             ChooseDirectoryCommand = new RelayCommand(o => ChooseDirectoryClick());
             DirectoryOptionsCommand = new RelayCommand(o => DirectoryOptionsClick());
@@ -146,12 +149,6 @@ namespace Bolvar.Models
             SearchStatus = "";
             string[] filenames = e.Result as string[];
             Info($"Got {filenames.Length} files");
-            m_FindWorker.RunAsync(new FindWorkerArgument()
-            {
-                Filenames = filenames,
-                Pattern = FindText,
-                CaseSensitive = m_SearchOptions.CaseSensitive
-            });
         }
 
         #endregion
@@ -177,27 +174,36 @@ namespace Bolvar.Models
             directoryOptionsWindow.ShowDialog();
         }
 
-        private void FindClick()
+        private void NewSearchPrepareUI()
         {
             FileMatches.Clear();
             TotalMatches = 0;
             FilesProcessed = 0;
+            IsGettingFiles = true;
+            SearchStatus = "Getting files...";
+        }
+
+        private void FindClick()
+        {
+            Trace("----------------------------");
 
             if (!ValidateFields())
                 return;
 
-            if(!m_GetFilesWorker.IsBusy())
+            NewSearchPrepareUI();
+            
+            GetFilesWorkerArgument filesSettings = new GetFilesWorkerArgument()
             {
-                IsSearching = true;
-                IsGettingFiles = true;
-                SearchStatus = "Getting file list.";
-                LogNewSearch();
-                m_GetFilesWorker.RunAsync(new GetFilesWorkerArgument()
-                {
-                    Root = RootDirectory,
-                    Options = m_DirectoryOptions
-                });
-            }
+                Root = m_RootDirectory,
+                Options = m_DirectoryOptions
+            };
+            SearchData searchInfo = new SearchData()
+            {
+                Pattern = m_FindText,
+                CaseSensitive = m_SearchOptions.CaseSensitive
+            };
+
+            m_FindWorker.RunAsync(filesSettings, searchInfo);
         }
 
         private void SearchOptionsClick(object sender = null)
@@ -212,7 +218,7 @@ namespace Bolvar.Models
 
         private void ReplaceClick(object sender = null)
         {
-            Warn("HEllo world, this is a warning. Do not pay attention to it. THis is not an error LOL");
+            Warn("Not implemented lol");
         }
 
         private void CancelClick(object sender = null)

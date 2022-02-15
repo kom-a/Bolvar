@@ -10,11 +10,12 @@ using System.Windows.Media;
 namespace Bolvar.Converters
 {
     [ValueConversion(typeof(ConsoleMessage), typeof(FlowDocument))]
-    class ConsoleMessageToFlowDocumentConverter : IValueConverter
+    public class ConsoleMessageToFlowDocumentConverter : IValueConverter
     {
         private FlowDocument m_Document;
         private Paragraph m_Paragraph;
-        ConsoleMessageToFlowDocumentConverter()
+
+        public ConsoleMessageToFlowDocumentConverter()
         {
             m_Document = new FlowDocument();
             m_Paragraph = new Paragraph();
@@ -40,17 +41,17 @@ namespace Bolvar.Converters
                 } break;
                 case ConsoleMessage.LogLevel.Info:
                 {
-                    run = new Run(message.Msg);
+                    run = new Run("INFO: " + message.Msg);
                     run.Foreground = new SolidColorBrush(Colors.LawnGreen);
                 } break;
                 case ConsoleMessage.LogLevel.Warning:
                 {
-                    run = new Run(message.Msg);
+                    run = new Run("WARNING: " + message.Msg);
                     run.Foreground = new SolidColorBrush(Colors.Orange);
                 } break;
                 case ConsoleMessage.LogLevel.Error:
                 {
-                    run = new Run(message.Msg);
+                    run = new Run("ERROR:" + message.Msg);
                     run.Foreground = new SolidColorBrush(Colors.Red);
                 } break;
                 default:

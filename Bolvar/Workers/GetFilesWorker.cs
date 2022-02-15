@@ -18,11 +18,13 @@ namespace Bolvar.Workers
     {
         private BackgroundWorker m_Worker;
 
-        public GetFilesWorker(RunWorkerCompletedEventHandler completed)
+        public GetFilesWorker(params RunWorkerCompletedEventHandler[] completed)
         {
             m_Worker = new BackgroundWorker();
             m_Worker.DoWork += GetFilesWork;
-            m_Worker.RunWorkerCompleted += completed;
+
+            foreach (var callback in completed)
+                m_Worker.RunWorkerCompleted += callback;
         }
 
         private void GetFilesWork(object sender, DoWorkEventArgs e)
@@ -80,7 +82,5 @@ namespace Bolvar.Workers
         {
             m_Worker.RunWorkerAsync(settings);
         }
-
-
     }
 }

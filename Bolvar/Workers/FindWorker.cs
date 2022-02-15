@@ -8,32 +8,54 @@ using System.Text;
 
 namespace Bolvar.Workers
 {
-    class FindWorkerArgument
+    public class SearchData
     {
-        public string[] Filenames { get; set; }
         public string Pattern { get; set; }
         public bool CaseSensitive { get; set; }
     }
 
-    class FindWorkerReportProgress
+    public class FindWorkerArgument
+    {
+        public string[] Filenames { get; set; }
+        public SearchData SearchInfo { get; set; }
+    }
+
+    public class FindWorkerReportProgress
     {
         public FileMatch Match { get; set; }
         public bool Error { get; set; }
         public string ErrorMessage { get; set; }
     }
 
-    class FindWorker
+    public class FindWorker
     {
+        private GetFilesWorker m_GetFilesWorker;
         private BackgroundWorker m_Worker;
+        private SearchData m_SearchInfo;
 
-        public FindWorker(ProgressChangedEventHandler progeress, RunWorkerCompletedEventHandler completed)
+
+        public FindWorker(Callbacks callbacks)
         {
+            m_GetFilesWorker = new GetFilesWorker(callbacks.GotFiles, GetFilesCompleted);
+
             m_Worker = new BackgroundWorker();
             m_Worker.WorkerSupportsCancellation = true;
             m_Worker.WorkerReportsProgress = true;
             m_Worker.DoWork += FindWork;
-            m_Worker.ProgressChanged += progeress;
-            m_Worker.RunWorkerCompleted += completed;
+            m_Worker.ProgressChanged += callbacks.ProgressChanged;
+            m_Worker.RunWorkerCompleted += callbacks.Completed;
+        }
+
+        private void GetFilesCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            string[] filenames = e.Result as string[];
+            FindWorkerArgument argument = new FindWorkerArgument()
+            {
+                Filenames = filenames, 
+                SearchInfo = m_SearchInfo
+            };
+
+            m_Worker.RunWorkerAsync(argument);
         }
 
         private List<int> AllIndexesOf(string str, string value, bool caseSensitive)
@@ -91,7 +113,7 @@ namespace Bolvar.Workers
 
                         while ((line = sr.ReadLine()) != null)
                         {
-                            List<int> indices = AllIndexesOf(line, argument.Pattern, argument.CaseSensitive);
+                            List<int> indices = AllIndexesOf(line, argument.SearchInfo.Pattern, argument.SearchInfo.CaseSensitive);
                             totalOccurences += indices.Count;
                         }
 
@@ -122,8 +144,8 @@ namespace Bolvar.Workers
         private void FindMultipleLines(FindWorkerArgument argument, DoWorkEventArgs e)
         {
             string[] filenames = argument.Filenames;
-            string[] patternLines = argument.Pattern.Split("\n");
-            StringComparison comparison = argument.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            string[] patternLines = argument.SearchInfo.Pattern.Split("\n");
+            StringComparison comparison = argument.SearchInfo.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             for (int i = 0; i < filenames.Length; i++)
             {
@@ -237,7 +259,7 @@ namespace Bolvar.Workers
         private void FindWork(object sender, DoWorkEventArgs e)
         {
             FindWorkerArgument argument = e.Argument as FindWorkerArgument;
-            string pattern = argument.Pattern;
+            string pattern = argument.SearchInfo.Pattern;
             string[] patternLines = pattern.Split("\n");
 
             if(patternLines.Length == 1)
@@ -251,9 +273,13 @@ namespace Bolvar.Workers
             return m_Worker.IsBusy;
         }
 
-        public void RunAsync(FindWorkerArgument argument)
+        public void RunAsync(GetFilesWorkerArgument filesSettings, SearchData searchInfo)
         {
-            m_Worker.RunWorkerAsync(argument);
+            if (m_GetFilesWorker.IsBusy() || m_Worker.IsBusy)
+                return;
+
+            m_SearchInfo = searchInfo;
+            m_GetFilesWorker.RunAsync(filesSettings);
         }
 
         public void Cancel()

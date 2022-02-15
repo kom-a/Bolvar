@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Bolvar
 {
-    class FileMatch
+    public class FileMatch
     {
         public String Filename { get; set; }
         public int Matches { get; set; }

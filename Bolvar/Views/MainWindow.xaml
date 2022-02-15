@@ -96,14 +96,16 @@
                 Grid.Column="0" 
                 HorizontalAlignment="Center"
                 Content="Find"/>
-            <TextBox 
+            <TextBox
                 Grid.Row="1"
                 Grid.Column="0"
                 AcceptsReturn="True"
+                AcceptsTab="True"
                 TextWrapping="Wrap"
                 IsEnabled="{Binding IsSearching, Converter={StaticResource InverseBooleanConverter}}"
                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                
                 Text="{Binding FindText}"/>
 
             <Grid 
@@ -146,6 +148,7 @@
                 Grid.Column="2"
                 AcceptsReturn="True"
                 TextWrapping="Wrap"
+                AcceptsTab="True"
                 IsEnabled="{Binding IsSearching, Converter={StaticResource InverseBooleanConverter}}"
                 Text="{Binding ReplaceText}"/>
         </Grid>
