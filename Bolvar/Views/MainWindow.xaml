@@ -25,12 +25,12 @@
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
 
-        <Menu Grid.Row="0" VerticalAlignment="Top" Background="GhostWhite">
+        <!--<Menu Grid.Row="0" VerticalAlignment="Top" Background="GhostWhite">
             <MenuItem Header="Help">
                 <MenuItem Header="About" ></MenuItem>
                 <MenuItem Header="Exit" ></MenuItem>
             </MenuItem>
-        </Menu>
+        </Menu>-->
 
         <Grid Grid.Row="1" Margin="10 0 10 0">
             <Grid.ColumnDefinitions>

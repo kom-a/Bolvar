@@ -27,6 +27,7 @@ namespace Bolvar.Models
         private string m_ReplaceText;
         private string m_SearchStatus;
         private FindWorker m_FindWorker;
+        private FindWorker m_FindReplaceWorker;
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
         private int m_ProgressPercentage;
@@ -40,7 +41,6 @@ namespace Bolvar.Models
         public ICommand FindCommand { get; set; }
         public ICommand SearchOptionsCommand { get; set; }
         public ICommand ReplaceCommand { get; set; }
-
         public ICommand CancelCommand { get; set; }
 
         public MainViewModel(MainWindow ownerWindow)
@@ -53,15 +53,11 @@ namespace Bolvar.Models
             FilesProcessed = 0;
             ProgressPercentage = 0;
             RootDirectory = "C:\\Users\\kamil\\Desktop\\test bolvar";
-            FindText = "hello kamil";
-            ReplaceText = "hello world";
+            FindText = "";
+            ReplaceText = "";
 
-            m_FindWorker = new FindWorker(new Callbacks()
-            {
-                GotFiles = GetFilesCompleted,
-                ProgressChanged = FindProgressChanged,
-                Completed = FindCompleted
-            });
+            m_FindWorker = new FindWorker(GetFilesCompleted, FindProgressChanged, FindCompleted);
+            m_FindReplaceWorker = new FindWorker(GetFilesCompleted, ReplaceProgressChanged, FindCompleted);
 
             ChooseDirectoryCommand = new RelayCommand(o => ChooseDirectoryClick());
             DirectoryOptionsCommand = new RelayCommand(o => DirectoryOptionsClick());
@@ -73,7 +69,7 @@ namespace Bolvar.Models
             m_DirectoryOptions = new DirectoryOptionsModel() {
                 IncludeSubDirectories = true,
                 ExcludeDir = "",
-                FileMask = "hello.txt",
+                FileMask = "*.*",
                 ExcludeMask = ""
             };
 
@@ -143,6 +139,37 @@ namespace Bolvar.Models
             }
         }
 
+        private void ReplaceFileCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            FileMatch match = e.Result as FileMatch;
+            FileMatches.Add(match);
+        }
+
+        private void ReplaceProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            FindWorkerReportProgress report = e.UserState as FindWorkerReportProgress;
+
+            ProgressPercentage = e.ProgressPercentage;
+            FilesProcessed++;
+
+            if (report.Match != null)
+                SearchStatus = report.Match.Filename;
+
+            if (report.Error)
+            {
+                if (report.ErrorMessage == "Binary")
+                    Warn($"Binary file {report.Match.Filename} skipped.");
+                else
+                    Warn(report.ErrorMessage);
+            }
+            else if (report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
+            {
+                TotalMatches += report.Match.Matches;
+                ReplaceWorker replaceWorker = new ReplaceWorker(report.Match, ReplaceText, ReplaceFileCompleted);
+                replaceWorker.Run();
+            }
+        }
+
         private void GetFilesCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             IsGettingFiles = false;
@@ -180,17 +207,17 @@ namespace Bolvar.Models
             TotalMatches = 0;
             FilesProcessed = 0;
             IsGettingFiles = true;
+            IsSearching = true;
             SearchStatus = "Getting files...";
         }
 
         private void FindClick()
         {
-            Trace("----------------------------");
-
             if (!ValidateFields())
                 return;
 
             NewSearchPrepareUI();
+            LogNewSearch();
             
             GetFilesWorkerArgument filesSettings = new GetFilesWorkerArgument()
             {
@@ -218,12 +245,30 @@ namespace Bolvar.Models
 
         private void ReplaceClick(object sender = null)
         {
-            Warn("Not implemented lol");
+            if (!ValidateFields())
+                return;
+
+            NewSearchPrepareUI();
+            LogNewSearch();
+
+            GetFilesWorkerArgument filesSettings = new GetFilesWorkerArgument()
+            {
+                Root = m_RootDirectory,
+                Options = m_DirectoryOptions
+            };
+            SearchData searchInfo = new SearchData()
+            {
+                Pattern = m_FindText,
+                CaseSensitive = m_SearchOptions.CaseSensitive
+            };
+
+            m_FindReplaceWorker.RunAsync(filesSettings, searchInfo);
         }
 
         private void CancelClick(object sender = null)
         {
             m_FindWorker.Cancel();
+            m_FindReplaceWorker.Cancel();
         }
 
         #endregion
@@ -239,8 +284,7 @@ namespace Bolvar.Models
                 OnPropertyChanged(nameof(FileMatches));
             }
         }
-            
-
+        
         public string RootDirectory
         {
             get { return m_RootDirectory; }

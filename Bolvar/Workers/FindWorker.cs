@@ -34,16 +34,16 @@ namespace Bolvar.Workers
         private SearchData m_SearchInfo;
 
 
-        public FindWorker(Callbacks callbacks)
+        public FindWorker(RunWorkerCompletedEventHandler gotFiles, ProgressChangedEventHandler progressChanged, RunWorkerCompletedEventHandler completed)
         {
-            m_GetFilesWorker = new GetFilesWorker(callbacks.GotFiles, GetFilesCompleted);
+            m_GetFilesWorker = new GetFilesWorker(gotFiles, GetFilesCompleted);
 
             m_Worker = new BackgroundWorker();
             m_Worker.WorkerSupportsCancellation = true;
             m_Worker.WorkerReportsProgress = true;
             m_Worker.DoWork += FindWork;
-            m_Worker.ProgressChanged += callbacks.ProgressChanged;
-            m_Worker.RunWorkerCompleted += callbacks.Completed;
+            m_Worker.ProgressChanged += progressChanged;
+            m_Worker.RunWorkerCompleted += completed;
         }
 
         private void GetFilesCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -198,7 +198,7 @@ namespace Bolvar.Workers
                                     cache.AddLast(line);
                                     if(j == patternLines.Length - 1)
                                     {
-                                        if (line.StartsWith(patternLines[j].Replace("\r", ""), comparison))
+                                        if (line != null && line.StartsWith(patternLines[j].Replace("\r", ""), comparison))
                                         {
                                             // MATCH
                                             totalOccurences++;

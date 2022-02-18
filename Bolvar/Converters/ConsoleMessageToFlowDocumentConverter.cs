@@ -51,7 +51,7 @@ namespace Bolvar.Converters
                 } break;
                 case ConsoleMessage.LogLevel.Error:
                 {
-                    run = new Run("ERROR:" + message.Msg);
+                    run = new Run("ERROR: " + message.Msg);
                     run.Foreground = new SolidColorBrush(Colors.Red);
                 } break;
                 default:

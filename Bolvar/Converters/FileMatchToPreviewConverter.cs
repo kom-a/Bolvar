@@ -17,6 +17,9 @@ namespace Bolvar.Converters
             if (match == null)
                 return "Nothing to preview";
 
+            if (!File.Exists(match.Filename))
+                return "Failed to open " + match.Filename;
+
             StringBuilder stringBuilder = new StringBuilder();
 
             using (StreamReader sr = new StreamReader(match.Filename))
