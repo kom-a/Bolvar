@@ -1,33 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 
 namespace Bolvar.Workers
 {
-    class ReplaceWorker
+    public class ReplaceWorkerData
+    {
+        public string SourceText { get; set; }
+        public string ReplaceText { get; set; }
+    }
+
+
+    public class ReplaceWorker
     {
         private BackgroundWorker m_Worker;
         private FileMatch m_FileMatch;
-        private string m_ReplaceText;
+        private ReplaceWorkerData m_ReplaceWorkerData;
 
-        public ReplaceWorker(FileMatch fileMatch, string replaceText, RunWorkerCompletedEventHandler replaceCompleted)
+        public ReplaceWorker(FileMatch fileMatch, ReplaceWorkerData replaceData, RunWorkerCompletedEventHandler replaceCompleted)
         {
             m_Worker = new BackgroundWorker();
             m_Worker.DoWork += ReplaceWork;
             m_Worker.RunWorkerCompleted += replaceCompleted;
 
             m_FileMatch = fileMatch;
-            m_ReplaceText = replaceText;
+            m_ReplaceWorkerData = replaceData;
         }
 
         private void ReplaceWork(object sender, DoWorkEventArgs e)
         {
-            e.Result = new FileMatch()
-            {
-                Filename = "Hello world.txt",
-                Matches = 123
-            };
+            if (!File.Exists(m_FileMatch.Filename))
+                return;
+
+            // TODO: rewrite this
+            string text = File.ReadAllText(m_FileMatch.Filename);
+            text = text.Replace(m_ReplaceWorkerData.SourceText, m_ReplaceWorkerData.ReplaceText);
+            File.WriteAllText(m_FileMatch.Filename, text);
+
+            e.Result = m_FileMatch;
         }
 
         public void Run()

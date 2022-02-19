@@ -141,6 +141,9 @@ namespace Bolvar.Models
 
         private void ReplaceFileCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            if (e.Cancelled)
+                return;
+
             FileMatch match = e.Result as FileMatch;
             FileMatches.Add(match);
         }
@@ -164,8 +167,14 @@ namespace Bolvar.Models
             }
             else if (report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
             {
+                ReplaceWorkerData replaceData = new ReplaceWorkerData()
+                { 
+                    SourceText = FindText,
+                    ReplaceText = ReplaceText
+                };
+
                 TotalMatches += report.Match.Matches;
-                ReplaceWorker replaceWorker = new ReplaceWorker(report.Match, ReplaceText, ReplaceFileCompleted);
+                ReplaceWorker replaceWorker = new ReplaceWorker(report.Match, replaceData, ReplaceFileCompleted);
                 replaceWorker.Run();
             }
         }
