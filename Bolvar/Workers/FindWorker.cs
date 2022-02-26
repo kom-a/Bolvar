@@ -97,7 +97,9 @@ namespace Bolvar.Workers
                             Match = new FileMatch()
                             {
                                 Filename = filename,
-                                Matches = 0
+                                Pattern = argument.SearchInfo.Pattern,
+                                Matches = new List<Match>()
+
                             },
                             Error = true,
                             ErrorMessage = "Binary"
@@ -108,13 +110,23 @@ namespace Bolvar.Workers
 
                     using (StreamReader sr = new StreamReader(filename))
                     {
-                        string line;
-                        int totalOccurences = 0;
+                        string lineContent;
+                        List<Match> matches = new List<Match>();
 
-                        while ((line = sr.ReadLine()) != null)
+                        int lineIndex = 0;
+                        while ((lineContent = sr.ReadLine()) != null)
                         {
-                            List<int> indices = AllIndexesOf(line, argument.SearchInfo.Pattern, argument.SearchInfo.CaseSensitive);
-                            totalOccurences += indices.Count;
+                            List<int> indices = AllIndexesOf(lineContent, argument.SearchInfo.Pattern, argument.SearchInfo.CaseSensitive);
+                            
+                            foreach (int index in indices)
+                            {
+                                matches.Add(new Match()
+                                {
+                                    Line = lineIndex,
+                                    Position = index
+                                });
+                            }
+                            lineIndex++;
                         }
 
                         m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
@@ -122,7 +134,8 @@ namespace Bolvar.Workers
                             Match = new FileMatch()
                             {
                                 Filename = filename,
-                                Matches = totalOccurences
+                                Pattern = argument.SearchInfo.Pattern,
+                                Matches = matches
                             },
                             Error = false,
                             ErrorMessage = ""
@@ -143,6 +156,7 @@ namespace Bolvar.Workers
 
         private void FindMultipleLines(FindWorkerArgument argument, DoWorkEventArgs e)
         {
+            // TODO: rewirte this completely (it does not work in some very specific cases)
             string[] filenames = argument.Filenames;
             string[] patternLines = argument.SearchInfo.Pattern.Split("\n");
             StringComparison comparison = argument.SearchInfo.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
@@ -169,7 +183,7 @@ namespace Bolvar.Workers
                             Match = new FileMatch()
                             {
                                 Filename = filename,
-                                Matches = 0
+                                Matches = new List<Match>()
                             },
                             Error = true,
                             ErrorMessage = "Binary"
@@ -179,8 +193,10 @@ namespace Bolvar.Workers
                     }
 
                     LinkedList<string> cache = new LinkedList<string>();
+                    List<Match> matches = new List<Match>();
                     using (StreamReader sr = new StreamReader(filename))
                     {
+                        int lineIndex = 0;
                         while (sr.Peek() > -1)
                         {
                             string line;
@@ -189,9 +205,9 @@ namespace Bolvar.Workers
                             else
                                 line = sr.ReadLine();
 
-
                             if(line.EndsWith(patternLines[0].Replace("\r", ""), comparison))
                             {
+                                int position = line.LastIndexOf(patternLines[0].Replace("\r", ""), comparison);
                                 for (int j = 1; j < patternLines.Length; j++)
                                 {
                                     line = sr.ReadLine();
@@ -202,6 +218,13 @@ namespace Bolvar.Workers
                                         {
                                             // MATCH
                                             totalOccurences++;
+
+                                            matches.Add(new Match()
+                                            {
+                                                Line = lineIndex,
+                                                Position = position
+                                            });
+
                                             if (cache.Count != 0)
                                                 cache.RemoveFirst();
                                         }
@@ -230,13 +253,15 @@ namespace Bolvar.Workers
                                 if (cache.Count != 0)
                                     cache.RemoveFirst();
                             }
+                            lineIndex++;
                         }
                         m_Worker.ReportProgress(percentProgress, new FindWorkerReportProgress()
                         {
                             Match = new FileMatch()
                             {
                                 Filename = filename,
-                                Matches = totalOccurences
+                                Pattern = argument.SearchInfo.Pattern,
+                                Matches = matches
                             },
                             Error = false,
                             ErrorMessage = ""

@@ -13,8 +13,10 @@
         <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <converters:ConsoleMessageToFlowDocumentConverter x:Key="ConsoleMessageToFlowDocumentConverter"/>
         <converters:FileMatchToPreviewConverter x:Key="FileMatchToPreviewConverter"/>
+        <converters:PreviewDataToFlowDocumentConverter x:Key="PreviewDataToFlowDocumentConverter"/>
+        <converters:MatchListToMatchListCountConverter x:Key="MatchListToMatchListCountConverter"/>
     </Window.Resources>
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
@@ -63,7 +65,7 @@
                 VerticalAlignment="Center"
                 IsEnabled="{Binding IsSearching, Converter={StaticResource InverseBooleanConverter}}"
                 Content="..."
-                Command="{Binding ChooseDirectoryCommand}"/> 
+                Command="{Binding ChooseDirectoryCommand}"/>
             <Button 
                 Grid.Column="4"
                 VerticalAlignment="Center" 
@@ -75,7 +77,7 @@
                 <StackPanel Orientation="Horizontal">
                     <Image Source="../Res/settings-icon.png" Width="20" Height="20"/>
                 </StackPanel>
-                
+
             </Button>
         </Grid>
 
@@ -200,36 +202,79 @@
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Filename" Width="100" DisplayMemberBinding="{Binding Filename}" />
-                    <GridViewColumn Header="Matches" Width="100" DisplayMemberBinding="{Binding Matches}" />
+                    <GridViewColumn Header="Matches" Width="100" DisplayMemberBinding="{Binding Matches, Converter={StaticResource MatchListToMatchListCountConverter}}" />
                 </GridView>
             </ListView.View>
         </ListView>
 
         <TabControl
             Grid.Row="5"
-            Margin="10">
+            Margin="10 0 10 2">
             <TabItem Header="Preview">
-                <ScrollViewer>
-                    <TextBlock Text="{Binding SelectedMatch, Converter={StaticResource FileMatchToPreviewConverter}}"></TextBlock>
-                </ScrollViewer>
+                <Grid Background="FloralWhite">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="25"/>
+                    </Grid.RowDefinitions>
+
+                    <ScrollViewer 
+                    Grid.Row="0">
+                        <helpers:BindableRichTextBox 
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Disabled"
+                    IsReadOnly="True"
+                    Background="LightYellow"
+                    FontSize="11"
+                    Document="{Binding Preview, Converter={StaticResource PreviewDataToFlowDocumentConverter}}">
+                        </helpers:BindableRichTextBox>
+                    </ScrollViewer>
+
+                    <StackPanel 
+                    Grid.Row="1"
+                    HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                        <Button 
+                            Margin="2 3 1 2" 
+                            IsEnabled="True" 
+                            Command="{Binding FirstMatchCommand}"
+                            Content=" &lt;&lt; "/>
+                        <Button 
+                            Margin="2 3 2 2" 
+                            Command="{Binding PreviousMatchCommand}"
+                            Content=" &lt; "/>
+                        <Label  
+                            Margin="2 0 2 2" 
+                            Content="1/23"/>
+                        <Button 
+                            Margin="2 3 2 2" 
+                            Command="{Binding NextMatchCommand}"
+                            Content=" &gt; "/>
+                        <Button 
+                            Margin="2 3 25 2" 
+                            Command="{Binding LastMatchCommand}"
+                            Content=" &gt;&gt; "/>
+                    </StackPanel>
+                </Grid>
             </TabItem>
 
-            
+
             <TabItem Header="Console">
                 <ScrollViewer ScrollChanged="ScrollViewer_ScrollChanged" x:Name="ConsoleScrollViewer">
-                <helpers:BindableRichTextBox 
+                    <helpers:BindableRichTextBox 
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Disabled"
                     Background="#202020"
                     IsReadOnly="True"
                     FontFamily="Consolas"
-                    FontSize="14"
+                    FontSize="11"
                     x:Name="ConsoleLog"
-                    Document="{Binding ConsoleMSG, Converter={StaticResource ConsoleMessageToFlowDocumentConverter}}"></helpers:BindableRichTextBox>
+                    Document="{Binding ConsoleMSG, Converter={StaticResource ConsoleMessageToFlowDocumentConverter}}">
+                    </helpers:BindableRichTextBox>
                 </ScrollViewer>
             </TabItem>
-            
+
         </TabControl>
+
     </Grid>
 </Window>
 

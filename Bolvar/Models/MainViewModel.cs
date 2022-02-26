@@ -5,8 +5,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
+using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Bolvar.Utils;
 using Bolvar.Views;
 using Bolvar.Workers;
@@ -28,6 +33,7 @@ namespace Bolvar.Models
         private string m_SearchStatus;
         private FindWorker m_FindWorker;
         private FindWorker m_FindReplaceWorker;
+        private PreviewWorker m_PreviewWorker;
         private bool m_IsGettingFiles;
         private bool m_IsSearching;
         private int m_ProgressPercentage;
@@ -35,6 +41,8 @@ namespace Bolvar.Models
         private int m_FilesProcessed;
         private int m_TotalMatches;
         private FileMatch m_SelectedMatch;
+        private PreviewData m_Preview;
+        private PreviewData m_LoadingPreviewData;
 
         public ICommand ChooseDirectoryCommand { get; set; }
         public ICommand DirectoryOptionsCommand { get; set; }
@@ -42,9 +50,14 @@ namespace Bolvar.Models
         public ICommand SearchOptionsCommand { get; set; }
         public ICommand ReplaceCommand { get; set; }
         public ICommand CancelCommand { get; set; }
+        public ICommand FirstMatchCommand { get; set; }
+        public ICommand PreviousMatchCommand { get; set; }
+        public ICommand NextMatchCommand { get; set; }
+        public ICommand LastMatchCommand { get; set; }
 
         public MainViewModel(MainWindow ownerWindow)
         {
+            // Init private fileds
             m_OwnerWindow = ownerWindow;
             FileMatches = new ObservableCollection<FileMatch>();
             IsGettingFiles = false;
@@ -55,29 +68,47 @@ namespace Bolvar.Models
             RootDirectory = "C:\\Users\\kamil\\Desktop\\test bolvar";
             FindText = "";
             ReplaceText = "";
+            Preview = null;
 
+            // Init loading preview
+            m_LoadingPreviewData = new PreviewData();
+            m_LoadingPreviewData.Index = 0;
+            m_LoadingPreviewData.Documents = new FlowDocument[1];
+            m_LoadingPreviewData.Documents[0] = new FlowDocument();
+            Paragraph loadingParagraph = new Paragraph();
+            loadingParagraph.Inlines.Add(new Run("Loading preview..."));
+            m_LoadingPreviewData.Documents[0].Blocks.Add(loadingParagraph);
+
+            // Init background workers
             m_FindWorker = new FindWorker(GetFilesCompleted, FindProgressChanged, FindCompleted);
             m_FindReplaceWorker = new FindWorker(GetFilesCompleted, ReplaceProgressChanged, FindCompleted);
+            m_PreviewWorker = new PreviewWorker(PreviewCompleted);
 
+            // Init commands
             ChooseDirectoryCommand = new RelayCommand(o => ChooseDirectoryClick());
             DirectoryOptionsCommand = new RelayCommand(o => DirectoryOptionsClick());
             FindCommand = new RelayCommand(o => FindClick());
             SearchOptionsCommand = new RelayCommand(o => SearchOptionsClick());
             ReplaceCommand = new RelayCommand(o => ReplaceClick());
             CancelCommand = new RelayCommand(o => CancelClick());
+            FirstMatchCommand = new RelayCommand(o => FirstMatchClick());
+            PreviousMatchCommand = new RelayCommand(o => PreviousMatchClick());
+            NextMatchCommand = new RelayCommand(o => NextMatchClick());
+            LastMatchCommand = new RelayCommand(o => LastMatchClick());
 
+            // Init pop-up windows models
             m_DirectoryOptions = new DirectoryOptionsModel() {
                 IncludeSubDirectories = true,
                 ExcludeDir = "",
                 FileMask = "*.*",
                 ExcludeMask = ""
             };
-
             m_SearchOptions = new SearchOptionsModel() {
                 CaseSensitive = true,
                 IncludeFilesWithoutMatches = false
             };
 
+            // Print welcome messsage
             Trace("Welcome to Bolvar find and replace tool");
         }
 
@@ -90,11 +121,51 @@ namespace Bolvar.Models
                 Error($"Directory \"{RootDirectory}\" does not exist.");
                 success = false;
             }
+            if(String.IsNullOrEmpty(FindText))
+            {
+                Error("Find field can not be empty");
+                success = false;
+            }
 
             return success;
         }
-
+        
         #region worker_callbacks
+
+        private void PreviewCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            // TODO: rewrite this to get FlowDocument that's ready to show
+            PreviewPage[] pages = e.Result as PreviewPage[];
+
+            if (pages == null)
+            {
+                Preview = null;
+                return;
+            }
+                
+
+            PreviewData tmp = new PreviewData();
+            tmp.Documents = new FlowDocument[pages.Length];
+
+            for (int i = 0; i < tmp.Documents.Length; i++)
+            {
+                tmp.Documents[i] = new FlowDocument();
+                Paragraph paragraph = new Paragraph();
+                Run prefix = new Run(pages[i].Prefix);
+                Bold highlighted = new Bold(new Run(pages[i].Highlighted));
+                Run postfix = new Run(pages[i].Postfix);
+
+                paragraph.Inlines.Add(prefix);
+                paragraph.Inlines.Add(highlighted);
+                paragraph.Inlines.Add(postfix);
+
+                tmp.Documents[i].Blocks.Add(paragraph);
+            }
+
+            tmp.Index = 0;
+
+            Preview = tmp;
+        }
 
         private void FindCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
@@ -132,9 +203,9 @@ namespace Bolvar.Models
                 else
                     Warn(report.ErrorMessage);
             }
-            else if(report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
+            else if(report.Match.Matches.Count > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
             {
-                TotalMatches += report.Match.Matches;
+                TotalMatches += report.Match.Matches.Count;
                 FileMatches.Add(report.Match);
             }
         }
@@ -165,7 +236,7 @@ namespace Bolvar.Models
                 else
                     Warn(report.ErrorMessage);
             }
-            else if (report.Match.Matches > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
+            else if (report.Match.Matches.Count > 0 || m_SearchOptions.IncludeFilesWithoutMatches)
             {
                 ReplaceWorkerData replaceData = new ReplaceWorkerData()
                 { 
@@ -173,7 +244,7 @@ namespace Bolvar.Models
                     ReplaceText = ReplaceText
                 };
 
-                TotalMatches += report.Match.Matches;
+                TotalMatches += report.Match.Matches.Count;
                 ReplaceWorker replaceWorker = new ReplaceWorker(report.Match, replaceData, ReplaceFileCompleted);
                 replaceWorker.Run();
             }
@@ -190,6 +261,28 @@ namespace Bolvar.Models
         #endregion
 
         #region button_callbacks
+
+        private void FirstMatchClick(object sender = null)
+        {
+
+        }
+
+        private void PreviousMatchClick(object sender = null)
+        {
+            Preview.Index--;
+            OnPropertyChanged(nameof(Preview));
+        }
+
+        private void NextMatchClick(object sender = null)
+        {
+            Preview.Index++;
+            OnPropertyChanged(nameof(Preview));
+        }
+
+        private void LastMatchClick(object sender = null)
+        {
+
+        }
 
         private void ChooseDirectoryClick(object sender = null)
         {
@@ -411,9 +504,23 @@ namespace Bolvar.Models
             {
                 if (m_SelectedMatch != value)
                     m_SelectedMatch = value;
+                Preview = m_LoadingPreviewData;
+                m_PreviewWorker.Run(SelectedMatch);
                 OnPropertyChanged(nameof(SelectedMatch));
             }
         }
+
+        public PreviewData Preview
+        {
+            get { return m_Preview; }
+            set
+            {
+                if (m_Preview != value)
+                    m_Preview = value;
+                OnPropertyChanged(nameof(Preview));
+            }
+        }
+        
 
         #endregion
 

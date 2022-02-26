@@ -31,7 +31,8 @@ namespace Bolvar.Helpers
             DependencyPropertyChangedEventArgs args)
         {
             RichTextBox rtb = (RichTextBox)obj;
-            rtb.Document = (FlowDocument)args.NewValue;
+            if(args.NewValue != null)
+                rtb.Document = (FlowDocument)args.NewValue;
         }
     }
 }
