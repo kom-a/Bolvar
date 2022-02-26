@@ -39,6 +39,8 @@ namespace Bolvar.Workers
             text = text.Replace(m_ReplaceWorkerData.SourceText, m_ReplaceWorkerData.ReplaceText);
             File.WriteAllText(m_FileMatch.Filename, text);
 
+            m_FileMatch.Pattern = m_ReplaceWorkerData.ReplaceText;
+
             e.Result = m_FileMatch;
         }
 

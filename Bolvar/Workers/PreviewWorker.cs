@@ -41,7 +41,7 @@ namespace Bolvar.Workers
 
             PreviewPage[] pages = new PreviewPage[match.Matches.Count];
 
-            const int nonHighlighedLength = 4;
+            const int nonHighlighedLength = 5;
 
             using (StreamReader sr = new StreamReader(match.Filename))
             {
@@ -72,7 +72,7 @@ namespace Bolvar.Workers
 
                         if (lineIndex == match.Matches[i].Line)
                         {
-                            pages[i].Prefix += (lineIndex + 1).ToString() + ". "  + line.Substring(0, match.Matches[i].Position);
+                            pages[i].Prefix += (lineIndex + 1).ToString() + ". "  + line.Substring(0, Math.Min(match.Matches[i].Position, line.Length));
 
                             for(int j = 0; j < splittedPattern.Length; j++)
                             {
