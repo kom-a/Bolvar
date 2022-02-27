@@ -15,6 +15,9 @@
         <converters:FileMatchToPreviewConverter x:Key="FileMatchToPreviewConverter"/>
         <converters:PreviewDataToFlowDocumentConverter x:Key="PreviewDataToFlowDocumentConverter"/>
         <converters:MatchListToMatchListCountConverter x:Key="MatchListToMatchListCountConverter"/>
+        <converters:PreviewToIndexLabelConverter x:Key="PreviewToIndexLabelConverter"/>
+        <converters:PreviewToIsPreviousPageAvailableConverter x:Key="PreviewToIsPreviousPageAvailableConverter"/>
+        <converters:PreviewToIsNextPageAvailableConverter x:Key="PreviewToIsNextPageAvailableConverter"/>
     </Window.Resources>
 
     <Grid>
@@ -235,22 +238,28 @@
                 Orientation="Horizontal">
                         <Button 
                             Margin="2 3 1 2" 
-                            IsEnabled="True" 
+                            IsEnabled="{Binding Preview, Converter={StaticResource PreviewToIsPreviousPageAvailableConverter}}"
                             Command="{Binding FirstMatchCommand}"
-                            Content=" &lt;&lt; "/>
+                            Content=" &lt;&lt; ">
+                        </Button>
                         <Button 
                             Margin="2 3 2 2" 
+                            IsEnabled="{Binding Preview, Converter={StaticResource PreviewToIsPreviousPageAvailableConverter}}"
                             Command="{Binding PreviousMatchCommand}"
-                            Content=" &lt; "/>
+                            Content=" &lt; ">
+                        </Button>
                         <Label  
                             Margin="2 0 2 2" 
-                            Content="1/23"/>
+                            Content="{Binding Preview, Converter={StaticResource PreviewToIndexLabelConverter}}"/>
                         <Button 
                             Margin="2 3 2 2" 
+                            IsEnabled="{Binding Preview, Converter={StaticResource PreviewToIsNextPageAvailableConverter}}"
                             Command="{Binding NextMatchCommand}"
-                            Content=" &gt; "/>
+                            Content=" &gt; ">
+                        </Button>
                         <Button 
                             Margin="2 3 25 2" 
+                            IsEnabled="{Binding Preview, Converter={StaticResource PreviewToIsNextPageAvailableConverter}}"
                             Command="{Binding LastMatchCommand}"
                             Content=" &gt;&gt; "/>
                     </StackPanel>

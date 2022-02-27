@@ -264,24 +264,34 @@ namespace Bolvar.Models
 
         private void FirstMatchClick(object sender = null)
         {
-
+            if (Preview == null)
+                return;
+            Preview.Index = 0;
+            OnPropertyChanged(nameof(Preview));
         }
 
         private void PreviousMatchClick(object sender = null)
         {
+            if (Preview == null)
+                return;
             Preview.Index--;
             OnPropertyChanged(nameof(Preview));
         }
 
         private void NextMatchClick(object sender = null)
         {
+            if (Preview == null)
+                return;
             Preview.Index++;
             OnPropertyChanged(nameof(Preview));
         }
 
         private void LastMatchClick(object sender = null)
         {
-
+            if (Preview == null)
+                return;
+            Preview.Index = Preview.Documents.Length - 1;
+            OnPropertyChanged(nameof(Preview));
         }
 
         private void ChooseDirectoryClick(object sender = null)
