@@ -15,7 +15,6 @@
             <RowDefinition></RowDefinition>
             <RowDefinition></RowDefinition>
             <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="100"></ColumnDefinition>
@@ -26,38 +25,26 @@
             Grid.Row="0"
             Grid.Column="0"
             Margin="0 0 0 4"
-            Content="Exclude dir:"/>
-        <TextBox
-            Grid.Row="0"
-            Grid.Column="1"
-            Margin="0 0 0 4"
-            IsEnabled="False"
-            Text="{Binding ExcludeDir}"/>
-
-        <Label 
-            Grid.Row="1"
-            Grid.Column="0"
-            Margin="0 0 0 4"
             Content="File mask:"/>
         <TextBox
-            Grid.Row="1"
+            Grid.Row="0"
             Grid.Column="1"
             Margin="0 0 0 4"
             Text="{Binding FileMask}"/>
 
         <Label 
-            Grid.Row="2"
+            Grid.Row="1"
             Grid.Column="0"
             Margin="0 0 0 4"
             Content="Exclude mask:"/>
         <TextBox
-            Grid.Row="2"
+            Grid.Row="1"
             Grid.Column="1"
             Margin="0 0 0 4"
             Text="{Binding ExcludeMask}"/>
 
         <CheckBox
-            Grid.Row="3"
+            Grid.Row="2"
             Grid.Column="0"
             Grid.ColumnSpan="2" 
             HorizontalAlignment="Center"

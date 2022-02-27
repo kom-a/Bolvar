@@ -65,7 +65,7 @@ namespace Bolvar.Models
             TotalMatches = 0;
             FilesProcessed = 0;
             ProgressPercentage = 0;
-            RootDirectory = "C:\\Users\\kamil\\Desktop\\test bolvar";
+            RootDirectory = "";
             FindText = "";
             ReplaceText = "";
             Preview = null;

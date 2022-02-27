@@ -196,17 +196,28 @@
 
         </Grid>
 
-        <ListView 
+        <ListView
                 Grid.Row="4"
                 Margin="10" 
                 SelectionMode="Single"
+                SizeChanged="ListView_SizeChanged"
                 SelectedItem="{Binding SelectedMatch}"
                 ItemsSource="{Binding FileMatches}">
             <ListView.View>
                 <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}">
+                            <Setter Property="IsEnabled" Value="False"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" Value="Black"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridView.Columns>
-                        <GridViewColumn Width="100" Header="Matches" DisplayMemberBinding="{Binding Matches, Converter={StaticResource MatchListToMatchListCountConverter}}" />
                         <GridViewColumn Width="Auto" Header="Filename" DisplayMemberBinding="{Binding Filename}" />
+                        <GridViewColumn Width="100" Header="Matches" DisplayMemberBinding="{Binding Matches, Converter={StaticResource MatchListToMatchListCountConverter}}" />
                     </GridView.Columns>
                 </GridView>
             </ListView.View>

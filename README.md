@@ -11,3 +11,7 @@ Bolvar is free and open source find and repalce tool.
 * Preview found matches
 * Background working
 * Cancellation
+
+## Short term goals
+* Serialize and deserialize input fields
+* Implement matches sorting by count
