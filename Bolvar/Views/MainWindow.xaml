@@ -37,7 +37,7 @@
             </MenuItem>
         </Menu>-->
 
-        <Grid Grid.Row="1" Margin="10 0 10 0">
+        <Grid Grid.Row="1" Margin="10 10 10 0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100"></ColumnDefinition>
                 <ColumnDefinition Width="80"></ColumnDefinition>
@@ -51,8 +51,8 @@
 
             <Image 
                 Grid.Column="0"
-                Source="../Res/logo-icon.png" 
-                Width="100" 
+                Source="/Res/logo.png" 
+                Width="100"
                 Height="100"/>
             <Label 
                 Grid.Column="1"
@@ -204,8 +204,10 @@
                 ItemsSource="{Binding FileMatches}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Filename" Width="100" DisplayMemberBinding="{Binding Filename}" />
-                    <GridViewColumn Header="Matches" Width="100" DisplayMemberBinding="{Binding Matches, Converter={StaticResource MatchListToMatchListCountConverter}}" />
+                    <GridView.Columns>
+                        <GridViewColumn Width="100" Header="Matches" DisplayMemberBinding="{Binding Matches, Converter={StaticResource MatchListToMatchListCountConverter}}" />
+                        <GridViewColumn Width="Auto" Header="Filename" DisplayMemberBinding="{Binding Filename}" />
+                    </GridView.Columns>
                 </GridView>
             </ListView.View>
         </ListView>

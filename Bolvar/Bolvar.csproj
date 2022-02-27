@@ -8,11 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Res\logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Res\logo-icon.png" />
+    <Resource Include="Res\logo.png" />
     <Resource Include="Res\settings-icon.png" />
   </ItemGroup>
 
