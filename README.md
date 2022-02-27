@@ -8,5 +8,6 @@ Bolvar is free and open source find and repalce tool.
 * Two implementations
     * Just searching
     * Replacing
+* Preview found matches
 * Background working
 * Cancellation
